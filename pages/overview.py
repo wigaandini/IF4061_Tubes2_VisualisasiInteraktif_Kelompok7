@@ -9,6 +9,7 @@ from utils.data_loader import (
     load_country_volatility,
     load_category_heatmap,
     get_global_monthly_trend,
+    get_unique_categories,
     get_year_range,
 )
 from utils.components import (
@@ -23,9 +24,9 @@ from utils.components import (
 dash.register_page(__name__, path="/", name="Overview", order=0)
 
 EVENTS = [
-    {"date": "2020-03", "label": "Pandemi COVID-19"},
-    {"date": "2022-02", "label": "Perang Rusia-Ukraina"},
-    {"date": "2023-06", "label": "Puncak El Niño"},
+    {"date": "2020-03", "label": "COVID-19"},
+    {"date": "2022-02", "label": "Russia-Ukraine War"},
+    {"date": "2023-06", "label": "El Niño Peak"},
 ]
 
 
@@ -73,15 +74,15 @@ def layout():
                 className="mb-3",
             ),
             make_chart_card(
-                "Tren Indeks Harga Pangan Global",
+                "Tren Harga Pangan Global",
                 "Median harga bulanan (USD) seluruh komoditas pangan, dengan penanda event global",
                 dcc.Graph(id="global-trend-chart", config={"displayModeBar": False}),
                 insight="Lonjakan harga terjadi bersamaan dengan guncangan global — pandemi COVID-19 "
                         "dan konflik Rusia–Ukraina meninggalkan jejak yang konsisten pada harga pangan dunia.",
             ),
             make_chart_card(
-                "Intensitas Gejolak Harga per Kategori Pangan",
-                "Perubahan harga month-over-month (%) per kategori per bulan — semakin gelap, semakin bergejolak",
+                "Intensitas Gejolak per Kategori Pangan",
+                "Perubahan harga month-over-month (%) per kategori — semakin gelap, semakin bergejolak",
                 dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
             ),
         ]
@@ -111,19 +112,18 @@ def update_trend(year_range):
     fig.add_trace(
         go.Scatter(
             x=monthly["year_month"], y=monthly["median_price"],
-            mode="lines", name="Median bulanan",
+            mode="lines", name="Median Harga",
             line=dict(color=COLORS["spectrum_4"], width=2.5),
             hovertemplate="<b>%{x}</b><br>Median: $%{y:.2f}<extra></extra>",
         )
     )
 
-    if len(monthly) >= 12:
-        monthly = monthly.copy()
-        monthly["smoothed"] = monthly["median_price"].rolling(12, center=True).mean()
+    if len(monthly) >= 6:
+        monthly["smoothed"] = monthly["median_price"].rolling(6, center=True).mean()
         fig.add_trace(
             go.Scatter(
                 x=monthly["year_month"], y=monthly["smoothed"],
-                mode="lines", name="Rata-rata bergerak 12 bulan",
+                mode="lines", name="Rata-rata 6 bulan",
                 line=dict(color=COLORS["text_sub"], width=1.5, dash="dash"),
                 hovertemplate="<b>%{x}</b><br>Smoothed: $%{y:.2f}<extra></extra>",
             )
@@ -131,7 +131,7 @@ def update_trend(year_range):
 
     fig.update_layout(
         **PLOTLY_LAYOUT, height=380,
-        xaxis=dict(title="Tahun", showgrid=False, dtick="M12", tickformat="%Y"),
+        xaxis=dict(title=None, showgrid=False, dtick="M12", tickformat="%Y-%m"),
         yaxis=dict(title="Median Harga (USD)", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
         hovermode="x unified",
@@ -161,13 +161,13 @@ def update_heatmap(year_range):
         data=go.Heatmap(
             z=pivot.values,
             x=pivot.columns.tolist(),
-            y=pivot.index.tolist(),
+            y=[c.title() for c in pivot.index.tolist()],
             colorscale=[
                 [0, "#F7F6F2"], [0.25, COLORS["spectrum_1"]],
                 [0.5, COLORS["spectrum_2"]], [0.75, COLORS["spectrum_3"]],
                 [1, COLORS["spectrum_4"]],
             ],
-            hovertemplate="<b>%{y}</b><br>Bulan: %{x}<br>Perubahan: %{z:.1f}%<extra></extra>",
+            hovertemplate="<b>%{y}</b><br>Bulan: %{x}<br>MoM Change: %{z:.1f}%<extra></extra>",
             colorbar=dict(title="MoM %", titleside="right", thickness=12, len=0.9),
         )
     )
