@@ -62,6 +62,11 @@ def get_unique_categories():
     return sorted(hm["category"].dropna().unique().tolist())
 
 
+def get_unique_commodities():
+    df = load_monthly_index()
+    return sorted(df["commodity"].dropna().unique().tolist())
+
+
 def get_unique_countries():
     df = load_country_volatility()
     return sorted(df["countryiso3"].dropna().unique().tolist())
