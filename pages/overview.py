@@ -148,32 +148,63 @@ def update_heatmap(year_range):
 
     hm_filtered = hm.copy()
     hm_filtered["_year"] = pd.to_datetime(hm_filtered["year_month"]).dt.year
+    
     hm_filtered = hm_filtered[
-        (hm_filtered["_year"] >= year_range[0]) & (hm_filtered["_year"] <= year_range[1])
+        (hm_filtered["_year"] >= 2016) & (hm_filtered["_year"] <= hm_filtered["_year"].max())
     ]
 
     pivot = hm_filtered.pivot_table(
-        index="category", columns="year_month", values="mom_change_pct", aggfunc="mean"
+        index="category", columns="year_month", values="mom_change_pct", aggfunc="mean", dropna=False
     )
     pivot = pivot.sort_index()
+
+    x_labels = pivot.columns.tolist()
+    x_positions = list(range(len(x_labels)))
+    tickvals = []
+    ticktext = []
+    
+    for i, label in enumerate(x_labels):
+        try:
+            date = pd.to_datetime(label)
+            if date.month == 1:  # January
+                tickvals.append(i)
+                ticktext.append(str(date.year))
+        except:
+            pass
 
     fig = go.Figure(
         data=go.Heatmap(
             z=pivot.values,
-            x=pivot.columns.tolist(),
+            x=x_positions,  
             y=[c.title() for c in pivot.index.tolist()],
             colorscale=[
                 [0, "#F7F6F2"], [0.25, COLORS["spectrum_1"]],
                 [0.5, COLORS["spectrum_2"]], [0.75, COLORS["spectrum_3"]],
                 [1, COLORS["spectrum_4"]],
             ],
-            hovertemplate="<b>%{y}</b><br>Bulan: %{x}<br>MoM Change: %{z:.1f}%<extra></extra>",
+            customdata=x_labels,  
+            hovertemplate="<b>%{y}</b><br>Bulan: %{customdata}<br>MoM Change: %{z:.1f}%<extra></extra>",
             colorbar=dict(title="MoM %", titleside="right", thickness=12, len=0.9),
         )
     )
+    
     fig.update_layout(
-        **PLOTLY_LAYOUT, height=320,
-        xaxis=dict(title=None, showgrid=False, dtick=6, tickangle=-45),
+        **PLOTLY_LAYOUT, 
+        height=420,
+        xaxis=dict(
+            title=None, 
+            showgrid=False, 
+            tickangle=-45,
+            tickmode='array',
+            tickvals=tickvals,
+            ticktext=ticktext,
+            tickfont=dict(size=8),
+            showticklabels=True,
+            range=[-2, len(x_positions) - 1], 
+        ),
         yaxis=dict(title=None, showgrid=False),
     )
+    
+    current_margin = fig.layout.margin
+    fig.update_layout(margin=dict(l=80, r=current_margin.r, t=current_margin.t, b=100))
     return fig
