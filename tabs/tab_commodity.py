@@ -16,6 +16,8 @@ from utils.components import (
     SPECTRUM,
 )
 
+COMMODITY_TREND_COLORS = ["#4F5D75", "#EF8D5A", "#CB573F"]
+
 
 def commodity_layout():
     options = get_unique_commodities()
@@ -189,14 +191,17 @@ def update_top_volatile(year_range, top_n):
 
 @callback(
     Output("commodity-trend-chart", "figure"),
+    Input("year-slider", "value"),
     Input("commodity-dropdown-1", "value"),
     Input("commodity-dropdown-2", "value"),
     Input("commodity-dropdown-3", "value"),
 )
-def update_commodity_trend(commodity_1, commodity_2, commodity_3):
+def update_commodity_trend(year_range, commodity_1, commodity_2, commodity_3):
     selections = [commodity_1, commodity_2, commodity_3]
-    selected = [item for item in selections if item]
-    selected = list(dict.fromkeys(selected))
+    selected = []
+    for item in selections:
+        if item and item not in selected:
+            selected.append(item)
 
     fig = go.Figure()
     if not selected:
@@ -211,27 +216,35 @@ def update_commodity_trend(commodity_1, commodity_2, commodity_3):
         return fig
 
     monthly = get_commodity_monthly_trend(selected)
-    monthly["_year"] = pd.to_datetime(monthly["year_month"]).dt.year
-    yearly = (
-        monthly.groupby(["commodity", "_year"])["usdprice"]
-        .median().reset_index().sort_values("_year")
+    if year_range:
+        monthly = monthly.copy()
+        monthly["_year"] = pd.to_datetime(monthly["year_month"]).dt.year
+        monthly = monthly[(monthly["_year"] >= year_range[0]) & (monthly["_year"] <= year_range[1])]
+    monthly["_month"] = pd.to_datetime(monthly["year_month"])
+    monthly_trend = (
+        monthly.groupby(["commodity", "_month"])["usdprice"]
+        .median().reset_index().sort_values("_month")
     )
 
     for idx, commodity in enumerate(selected):
-        series = yearly[yearly["commodity"] == commodity]
+        series = monthly_trend[monthly_trend["commodity"] == commodity]
         fig.add_trace(
             go.Scatter(
-                x=series["_year"], y=series["usdprice"],
+                x=series["_month"], y=series["usdprice"],
                 mode="lines+markers", name=commodity,
-                line=dict(color=SPECTRUM[idx % len(SPECTRUM)], width=2.5),
+                line=dict(color=COMMODITY_TREND_COLORS[idx % len(COMMODITY_TREND_COLORS)], width=2.5),
                 marker=dict(size=6),
-                hovertemplate="<b>%{x}</b><br>%{y:.2f} USD<extra>%{fullData.name}</extra>",
+                hovertemplate="<b>%{x|%Y-%m}</b><br>Median: $%{y:.2f}<extra>%{fullData.name}</extra>",
             )
         )
 
+    layout_kwargs = {
+        **PLOTLY_LAYOUT,
+        "margin": dict(b=40, l=40, r=20, t=40),
+    }
     fig.update_layout(
-        **PLOTLY_LAYOUT, height=420,
-        xaxis=dict(title="Tahun", dtick=1, showgrid=False),
+        **layout_kwargs, height=420,
+        xaxis=dict(title="Tahun", dtick="M12", tickformat="%Y-%m", showgrid=False),
         yaxis=dict(title="Harga (USD)", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
         hovermode="x unified",
