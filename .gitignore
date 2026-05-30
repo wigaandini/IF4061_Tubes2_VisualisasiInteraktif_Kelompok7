@@ -9,5 +9,18 @@ build/
 .DS_Store
 *.log
 
-data/*
-!data/.gitkeep
+# File besar (raw data)
+data/clean_base_dataset.csv
+data/wfp_food_prices_final_dataset.csv
+data/wfp_markets_global.csv
+data/wfp_currencies_global.csv
+data/wfp_commodities_global.csv
+data/pair_growth_scatter_base.csv
+data/category_time_heatmap.csv
+data/commodity_volatility.csv
+data/country_volatility.csv
+data/monthly_pair_index.csv
+
+# Processed data 
+!data/processed/
+!data/processed/*.csv
