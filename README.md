@@ -4,7 +4,7 @@
 </div>
 
 ## Deskripsi
-Dashboard visualisasi interaktif untuk menganalisis dinamika dan volatilitas harga komoditas pangan global selama periode 2016-2026. Proyek ini menampilkan perubahan harga berbagai komoditas pangan di berbagai negara dan pasar untuk membantu pengguna memahami pola fluktuasi harga, tren pasar, serta perbedaan tingkat volatilitas antar wilayah dan komoditas.
+Dashboard visualisasi interaktif untuk menganalisis dinamika dan volatilitas harga komoditas pangan global selama periode 2016-2026. Proyek ini menampilkan perubahan harga berbagai komoditas pangan di berbagai negara dan pasar untuk membantu pengguna memahami pola fluktuasi harga, tren pasar, serta perbedaan tingkat volatilitas antar wilayah dan komoditas. Dataset utama yang digunakan berasal dari World Food Programme (WFP) yang dikumpulkan secara global.
 
 ## Setup & Instalasi
 <b>1. Clone repository</b>
