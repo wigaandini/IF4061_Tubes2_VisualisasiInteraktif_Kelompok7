@@ -279,11 +279,20 @@ def update_heatmap_insight(year_range):
         for cat, val in ranking
     ]
 
+    top_cat, top_val = ranking[0]
+
     return html.Div(
         [
             html.P(
-                f"Pada rentang periode {start_year} hingga {end_year}, tiga kategori pangan dengan "
-                f"gejolak harga tertinggi (rata-rata absolut perubahan MoM) adalah:",
+                [
+                    f"Pada rentang periode {start_year} hingga {end_year}, ",
+                    html.Span(
+                        top_cat.title(),
+                        style={"color": "var(--highlight)", "fontWeight": "600"},
+                    ),
+                    " menjadi kategori pangan paling bergejolak."
+                    " Tiga kategori dengan gejolak harga tertinggi (rata-rata absolut perubahan MoM) adalah:",
+                ],
                 style={"margin": "0 0 8px 0", "fontSize": "13px", "color": "var(--text-main)"},
             ),
             html.Ul(items, style={"margin": "0", "paddingLeft": "20px"}),
