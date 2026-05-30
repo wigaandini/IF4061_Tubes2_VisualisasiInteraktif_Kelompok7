@@ -60,9 +60,9 @@ header = html.Div(
 
 tabs = dbc.Tabs(
     [
-        dbc.Tab(overview_layout(), label="📊  Gambaran Umum", tab_id="overview"),
-        dbc.Tab(commodity_layout(), label="🌾  Komoditas", tab_id="commodity"),
-        dbc.Tab(geography_layout(), label="🌍  Geografi", tab_id="geography"),
+        dbc.Tab(overview_layout(), label="Gambaran Umum", tab_id="overview"),
+        dbc.Tab(commodity_layout(), label="Komoditas", tab_id="commodity"),
+        dbc.Tab(geography_layout(), label="Geografi", tab_id="geography"),
     ],
     id="main-tabs",
     active_tab="overview",
