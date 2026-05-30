@@ -93,7 +93,14 @@ def compute_kpis(year_range=None):
 
     cv_per_country = df.groupby("countryiso3")["price_index"].agg(["std", "mean"])
     cv_per_country["cv"] = cv_per_country["std"] / cv_per_country["mean"]
-    top_country = cv_per_country["cv"].idxmax() if len(cv_per_country) > 0 else "-"
+    top_country_iso = cv_per_country["cv"].idxmax() if len(cv_per_country) > 0 else "-"
+
+    try:
+        import pycountry
+        c = pycountry.countries.get(alpha_3=top_country_iso)
+        top_country = f"{c.name} ({top_country_iso})" if c else top_country_iso
+    except Exception:
+        top_country = top_country_iso
 
     cat_hm = load_category_heatmap()
     if year_range:
