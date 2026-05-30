@@ -13,7 +13,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 
 def log(msg):
-    print(f"  → {msg}")
+    print(f"  -> {msg}")
 
 
 def load_raw_data():
@@ -133,7 +133,7 @@ def compute_country_volatility(pairs):
 
 
 def compute_category_heatmap(df):
-    print("\n[6/6] Menghitung heatmap kategori × waktu...")
+    print("\n[6/6] Menghitung heatmap kategori x waktu...")
 
     if "category" not in df.columns:
         log("SKIP — kolom 'category' tidak ditemukan")
@@ -169,7 +169,7 @@ def main():
     compute_category_heatmap(df)
 
     print("\n" + "=" * 60)
-    print("  SELESAI — Semua file tersimpan di data/processed/")
+    print("  SELESAI - Semua file tersimpan di data/processed/")
     print("=" * 60)
 
     print("\nFile yang dihasilkan:")
