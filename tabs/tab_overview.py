@@ -53,7 +53,7 @@ def overview_layout():
                                 style={"margin": "0 0 4px 0", "fontSize": "16px", "fontWeight": "600"}
                             ),
                             html.P(
-                                "Median harga bulanan (USD) seluruh komoditas pangan, dengan penanda event global",
+                                "Median harga bulanan (USD) seluruh komoditas pangan, dengan penanda peristiwa global",
                                 style={"margin": "0 0 12px 0", "fontSize": "13px", "color": "var(--text-sub)"}
                             ),
                         ],
