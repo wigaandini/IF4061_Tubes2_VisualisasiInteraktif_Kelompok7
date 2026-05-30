@@ -52,6 +52,12 @@ sidebar = html.Div(
                     active="exact",
                     className="sidebar-link",
                 ),
+                dbc.NavLink(
+                    [html.Span("🌾", style={"marginRight": "10px"}), "Commodity Trends"],
+                    href="/commodity-trends",
+                    active="exact",
+                    className="sidebar-link",
+                ),
                 # === Halaman tim lain (akan ditambahkan oleh masing-masing) ===
                 # dbc.NavLink([html.Span("🌾"), " Commodity Explorer"], href="/commodity", active="exact", className="sidebar-link"),
                 # dbc.NavLink([html.Span("🌍"), " Geographic Explorer"], href="/geography", active="exact", className="sidebar-link"),
