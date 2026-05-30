@@ -71,9 +71,9 @@ tabs = dbc.Tabs(
 
 footer = html.Div(
     [
-        html.Span("Sumber: WFP Global Food Prices Database • CC BY-IGO"),
-        html.Span(" · "),
-        html.Span("Kelompok 7 — IF4061 Visualisasi Data • ITB 2026"),
+        html.Span("Sumber: WFP Global Food Prices Database (2016-2026)"),
+        html.Span(" | "),
+        html.Span("Kelompok 7 - IF4061 Visualisasi Data"),
     ],
     className="dashboard-footer",
 )
