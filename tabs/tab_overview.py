@@ -16,12 +16,28 @@ from utils.components import (
     PLOTLY_LAYOUT,
     COLORS,
 )
+from processing.translations import CATEGORY_ID, COMMODITY_ID
 
 EVENTS = [
     {"date": "2020-03", "label": "COVID-19"},
-    {"date": "2022-02", "label": "Russia-Ukraine War"},
-    {"date": "2023-06", "label": "El Niño Peak"},
+    {"date": "2022-02", "label": "Perang Rusia-Ukraina"},
+    {"date": "2023-06", "label": "Puncak El Nino"},
 ]
+
+
+def _translate_category(name):
+    if name is None:
+        return name
+    key = str(name).strip().lower()
+    if key in CATEGORY_ID:
+        return CATEGORY_ID[key]
+    return str(name).title()
+
+
+def _translate_commodity(name):
+    if name is None:
+        return name
+    return COMMODITY_ID.get(name, name)
 
 
 def overview_layout():
@@ -94,11 +110,13 @@ def overview_layout():
 def update_kpis(year_range):
     kpis = compute_kpis(year_range)
     lonjakan = f"+{kpis['lonjakan_pct']:.0f}%"
+    top_volatile = _translate_commodity(kpis["top_volatile"])
+    top_category = _translate_category(kpis["top_category"])
     return [
         dbc.Col(make_kpi_card(lonjakan, "Lonjakan Harga Tertinggi", COLORS["highlight"]), md=3),
-        dbc.Col(make_kpi_card(kpis["top_volatile"], "Komoditas Paling Volatil", COLORS["spectrum_4"]), md=3),
+        dbc.Col(make_kpi_card(top_volatile, "Komoditas Paling Volatil", COLORS["spectrum_4"]), md=3),
         dbc.Col(make_kpi_card(kpis["top_country"], "Negara Paling Rentan", COLORS["spectrum_3"]), md=3),
-        dbc.Col(make_kpi_card(kpis["top_category"], "Kategori Paling Bergejolak", COLORS["spectrum_2"]), md=3),
+        dbc.Col(make_kpi_card(top_category, "Kategori Paling Bergejolak", COLORS["spectrum_2"]), md=3),
     ]
 
 
@@ -204,11 +222,13 @@ def update_heatmap(year_range):
 
     customdata = [list(x_display) for _ in range(len(pivot.index))]
 
+    y_labels = [_translate_category(c) for c in pivot.index.tolist()]
+
     fig = go.Figure(
         data=go.Heatmap(
             z=pivot.values,
             x=x_positions,
-            y=[c.title() for c in pivot.index.tolist()],
+            y=y_labels,
             colorscale=[
                 [0, "#F7F6F2"],
                 [0.33, "#F4A261"],
@@ -217,10 +237,10 @@ def update_heatmap(year_range):
             ],
             customdata=customdata,
             hovertemplate="<b>%{y}</b><br>Bulan: %{customdata}<br>MoM Change: %{z:.1f}%<extra></extra>",
-            colorbar=dict(title="MoM %", titleside="right", thickness=12, len=0.9),
+            colorbar=dict(title=dict(text="MoM %", side="right"), thickness=12, len=0.9),
         )
     )
-    
+
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=420,
@@ -272,7 +292,7 @@ def update_heatmap_insight(year_range):
     items = [
         html.Li(
             [
-                html.Span(f"{cat.title()}", style={"fontWeight": "600"}),
+                html.Span(f"{_translate_category(cat)}", style={"fontWeight": "600"}),
                 html.Span(f" ({val:.2f}%)", style={"color": "var(--highlight)", "fontWeight": "600"}),
             ],
             style={"marginBottom": "4px", "fontSize": "13px", "color": "var(--text-main)"},
@@ -288,7 +308,7 @@ def update_heatmap_insight(year_range):
                 [
                     f"Pada rentang periode {start_year} hingga {end_year}, ",
                     html.Span(
-                        top_cat.title(),
+                        _translate_category(top_cat),
                         style={"color": "var(--highlight)", "fontWeight": "600"},
                     ),
                     " menjadi kategori pangan paling bergejolak."
