@@ -122,6 +122,8 @@ body {
     box-shadow: var(--card-shadow);
     border-left: 4px solid var(--spectrum-2);
     transition: box-shadow 0.2s ease;
+    justify-content: center;
+    height: 120px;
 }
 
 .kpi-card:hover {
