@@ -50,8 +50,8 @@ def overview_layout():
                     html.Div(
                         [
                             html.P(
-                                "Lonjakan harga terjadi bersamaan dengan guncangan global — pandemi COVID-19 "
-                                "dan konflik Rusia–Ukraina meninggalkan jejak yang konsisten pada harga pangan dunia.",
+                                "Lonjakan harga terjadi bersamaan dengan guncangan global, seperti pandemi COVID-19 "
+                                "dan konflik Rusia-Ukraina, meninggalkan jejak yang konsisten pada harga pangan dunia.",
                                 style={
                                     "margin": "12px 0 0 0",
                                     "padding": "12px 16px",

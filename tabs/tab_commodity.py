@@ -66,7 +66,7 @@ def commodity_layout():
                 None,
                 dcc.Graph(id="top-volatile-chart", config={"displayModeBar": False}),
                 insight="Rice, soybeans, dan peas secara bergantian mendominasi peringkat atas volatilitas "
-                        "sepanjang 2016-2026, tetapi ketiganya menunjukkan pola yang sama berupa peningkatan "
+                        "sepanjang satu dekade terkahir, tetapi ketiganya menunjukkan pola yang sama berupa peningkatan "
                         "volatilitas yang saling terhubung.",
             ),
             make_chart_card(
