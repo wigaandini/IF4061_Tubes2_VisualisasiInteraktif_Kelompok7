@@ -8,6 +8,7 @@ from utils.data_loader import (
     get_global_monthly_trend,
     get_year_range,
     compute_kpis,
+    get_category_volatility_ranking,
 )
 from utils.components import (
     make_kpi_card,
@@ -74,8 +75,13 @@ def overview_layout():
             ),
             make_chart_card(
                 "Intensitas Gejolak per Kategori Pangan",
-                "Perubahan harga month-over-month (%) per kategori — semakin gelap, semakin bergejolak",
-                dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
+                "Perubahan harga month-over-month (%) per kategori, semakin gelap, semakin bergejolak",
+                html.Div(
+                    [
+                        dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
+                        html.Div(id="heatmap-insight"),
+                    ]
+                ),
             ),
         ]
     )
@@ -171,16 +177,16 @@ def update_heatmap(year_range):
 
     x_labels = pivot.columns.tolist()
     x_positions = list(range(len(x_labels)))
+
     tickvals = []
     ticktext = []
-
     for i, label in enumerate(x_labels):
         try:
             date = pd.to_datetime(label)
             if date.month == 1:
                 tickvals.append(i)
                 ticktext.append(str(date.year))
-        except:
+        except (ValueError, TypeError):
             pass
 
     bulan_id = {
@@ -221,13 +227,81 @@ def update_heatmap(year_range):
         uirevision=f"heatmap-{start_year}-{end_year}",
         dragmode="zoom",
         xaxis=dict(
-            title=None, showgrid=False, tickangle=-45,
-            tickmode="array", tickvals=tickvals, ticktext=ticktext,
-            tickfont=dict(size=8), showticklabels=True, autorange=True,
+            title=dict(text="Tahun", standoff=14),
+            showgrid=False,
+            tickangle=0,
+            tickmode="array",
+            tickvals=tickvals,
+            ticktext=ticktext,
+            tickfont=dict(size=10),
+            showticklabels=True,
+            autorange=True,
         ),
-        yaxis=dict(title=None, showgrid=False, autorange=True),
+        yaxis=dict(
+            title=dict(text="Kategori", standoff=18),
+            showgrid=False,
+            autorange=True,
+            automargin=True,
+            ticklabelstandoff=10,
+        ),
     )
 
     current_margin = fig.layout.margin
-    fig.update_layout(margin=dict(l=80, r=current_margin.r, t=current_margin.t, b=100))
+    fig.update_layout(margin=dict(l=80, r=current_margin.r, t=current_margin.t, b=45))
     return fig
+
+@callback(
+    Output("heatmap-insight", "children"),
+    Input("year-slider", "value"),
+)
+def update_heatmap_insight(year_range):
+    if year_range:
+        start_year, end_year = int(year_range[0]), int(year_range[1])
+    else:
+        start_year, end_year = get_year_range()
+
+    ranking = get_category_volatility_ranking((start_year, end_year), top_n=3)
+
+    if not ranking:
+        return html.P(
+            f"Tidak ada data kategori pada rentang periode {start_year} hingga {end_year}.",
+            style={"margin": "0", "fontSize": "13px", "color": "var(--text-sub)"},
+        )
+
+    items = [
+        html.Li(
+            [
+                html.Span(f"{cat.title()}", style={"fontWeight": "600"}),
+                html.Span(f" ({val:.2f}%)", style={"color": "var(--highlight)", "fontWeight": "600"}),
+            ],
+            style={"marginBottom": "4px", "fontSize": "13px", "color": "var(--text-main)"},
+        )
+        for cat, val in ranking
+    ]
+
+    top_cat, top_val = ranking[0]
+
+    return html.Div(
+        [
+            html.P(
+                [
+                    f"Pada rentang periode {start_year} hingga {end_year}, ",
+                    html.Span(
+                        top_cat.title(),
+                        style={"color": "var(--highlight)", "fontWeight": "600"},
+                    ),
+                    " menjadi kategori pangan paling bergejolak."
+                    " Tiga kategori dengan gejolak harga tertinggi (rata-rata absolut perubahan MoM) adalah:",
+                ],
+                style={"margin": "0 0 8px 0", "fontSize": "13px", "color": "var(--text-main)"},
+            ),
+            html.Ul(items, style={"margin": "0", "paddingLeft": "20px"}),
+        ],
+        style={
+            "margin": "4px 0 0 0",
+            "padding": "12px 16px",
+            "borderLeft": "4px solid var(--highlight)",
+            "backgroundColor": "rgba(217, 58, 47, 0.05)",
+            "borderRadius": "4px",
+        },
+    )

@@ -69,7 +69,7 @@ body {
 
 .dashboard-tabs .nav-tabs {
     background: var(--card-bg);
-    padding: 0 36px;
+    padding: 0;
     margin: 0 -36px;
     border-bottom: 3px solid #e8e4de;
     position: sticky;
@@ -79,12 +79,18 @@ body {
     width: calc(100% + 72px);
 }
 
+.dashboard-tabs .nav-item {
+    flex: 1;
+}
+
 .dashboard-tabs .nav-tabs .nav-item {
     flex: 1;
     text-align: center;
 }
 
 .dashboard-tabs .nav-link {
+    width: 100%;
+    text-align: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 600;
@@ -114,6 +120,10 @@ body {
     padding-top: 28px;
 }
 
+.tab-pane {
+    padding-top: 20px;
+}
+
 /* ===== KPI CARDS ===== */
 .kpi-card {
     background: var(--card-bg);
@@ -122,6 +132,8 @@ body {
     box-shadow: var(--card-shadow);
     border-left: 4px solid var(--spectrum-2);
     transition: box-shadow 0.2s ease;
+    justify-content: center;
+    height: 120px;
 }
 
 .kpi-card:hover {
@@ -202,8 +214,8 @@ body {
 .dashboard-footer {
     text-align: center;
     padding: 20px 36px;
-    font-size: 11px;
-    color: var(--text-sub);
+    font-size: 12px;
+    color: #4F5D75;
     border-top: 1px solid #e8e4de;
     margin-top: 16px;
 }

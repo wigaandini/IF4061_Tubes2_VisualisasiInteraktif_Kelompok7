@@ -136,7 +136,7 @@ def compute_category_heatmap(df):
     print("\n[6/6] Menghitung heatmap kategori x waktu...")
 
     if "category" not in df.columns:
-        log("SKIP — kolom 'category' tidak ditemukan")
+        log("SKIP kolom 'category' tidak ditemukan")
         return None
 
     monthly_cat = df.groupby(["category", "year_month"])["usdprice"].median().reset_index()

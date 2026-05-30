@@ -39,6 +39,21 @@ def get_unique_commodities():
     df = load_commodity_volatility()
     return sorted(df["commodity"].dropna().unique().tolist())
 
+def get_category_volatility_ranking(year_range=None, top_n=3):
+    df = load_category_heatmap().copy()
+    if year_range:
+        df["_year"] = pd.to_datetime(df["year_month"]).dt.year
+        df = df[(df["_year"] >= year_range[0]) & (df["_year"] <= year_range[1])]
+    if "mom_change_pct" not in df.columns or len(df) == 0:
+        return []
+    df = df.assign(abs_mom=df["mom_change_pct"].abs())
+    ranking = (
+        df.groupby("category")["abs_mom"]
+        .mean()
+        .sort_values(ascending=False)
+        .head(top_n)
+    )
+    return [(cat, float(val)) for cat, val in ranking.items()]
 
 def get_year_range():
     df = load_monthly_index()
