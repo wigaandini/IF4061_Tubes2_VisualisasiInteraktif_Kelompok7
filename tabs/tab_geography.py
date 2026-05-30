@@ -6,7 +6,8 @@ import plotly.graph_objects as go
 import pandas as pd
 
 from utils.data_loader import load_monthly_index, get_year_range, get_country_detail
-from utils.components import make_chart_card, PLOTLY_LAYOUT, COLORS
+from utils.components import make_chart_card, PLOTLY_LAYOUT, COLORS, SPECTRUM
+from processing.translations import COMMODITY_ID
 
 
 COLORSCALE = [
@@ -15,6 +16,12 @@ COLORSCALE = [
     (0.66, "#e1694d"),
     (1.0, "#d8392e"),
 ]
+
+LABEL_DARK = "#374357"
+
+INIT_SCALE = 0.92
+INIT_LON = 10
+INIT_LAT = 12
 
 
 def _hex_to_rgb(h):
@@ -76,13 +83,61 @@ def _country_volatility_for_years(year_start, year_end):
     return cv
 
 
+@lru_cache(maxsize=128)
+def _commodity_volatility_for_country(country_iso, year_start, year_end):
+    df = _monthly_with_year()
+    df = df[
+        (df["countryiso3"] == country_iso)
+        & (df["year"] >= year_start)
+        & (df["year"] <= year_end)
+    ]
+
+    cv = df.groupby("commodity").agg(
+        mean_index=("price_index", "mean"),
+        std_index=("price_index", "std"),
+        n_months=("year_month", "nunique"),
+    ).reset_index()
+
+    cv["cv_index"] = cv["std_index"] / cv["mean_index"]
+    cv = cv.dropna(subset=["cv_index"]).sort_values("cv_index", ascending=False).reset_index(drop=True)
+    return cv
+
+
 def _resolve_years(year_range):
     if year_range and len(year_range) == 2:
         return int(year_range[0]), int(year_range[1])
     return get_year_range()
 
 
-def _zoom_button(symbol, btn_id):
+def _clicked_iso(clickData):
+    if clickData and "points" in clickData and len(clickData["points"]) > 0:
+        return clickData["points"][0].get("location")
+    return None
+
+
+def _empty_fig(message, height):
+    fig = go.Figure()
+    fig.update_layout(
+        **PLOTLY_LAYOUT,
+        height=height,
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        annotations=[
+            dict(
+                text=message,
+                showarrow=False,
+                font=dict(size=13, color=COLORS["text_sub"]),
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=0.5,
+            )
+        ],
+    )
+    return fig
+
+
+def _zoom_button(symbol, btn_id, font_size="18px"):
     return html.Button(
         symbol,
         id=btn_id,
@@ -95,7 +150,7 @@ def _zoom_button(symbol, btn_id):
             "border": "none",
             "borderRadius": "8px",
             "cursor": "pointer",
-            "fontSize": "18px",
+            "fontSize": font_size,
             "fontWeight": "bold",
             "lineHeight": "1",
             "boxShadow": "0 2px 6px rgba(31, 42, 68, 0.25)",
@@ -117,10 +172,10 @@ def _detail_placeholder():
             ),
             html.Div(
                 "Klik salah satu negara pada globe untuk melihat detail "
-                "volatilitas dan tren indeks harganya.",
+                "volatilitas dan tren harganya.",
                 style={
                     "fontSize": "13px",
-                    "color": "var(--text-sub)",
+                    "color": LABEL_DARK,
                     "lineHeight": "1.5",
                 },
             ),
@@ -130,6 +185,7 @@ def _detail_placeholder():
             "flexDirection": "column",
             "justifyContent": "center",
             "height": "100%",
+            "minWidth": "0",
         },
     )
 
@@ -142,7 +198,8 @@ def _detail_message(text):
             "flexDirection": "column",
             "justifyContent": "center",
             "height": "100%",
-            "color": "var(--text-sub)",
+            "minWidth": "0",
+            "color": LABEL_DARK,
             "fontSize": "13px",
             "lineHeight": "1.5",
         },
@@ -155,109 +212,140 @@ def geography_layout():
             dcc.Store(id="geo-zoom-dummy"),
             make_chart_card(
                 "Persebaran Geografis Volatilitas Harga",
-                "Koefisien variasi (CV) indeks harga pangan per negara pada rentang tahun terpilih — "
-                "semakin merah, semakin volatil. Seret untuk memutar globe, gunakan tombol +/- untuk memperbesar.",
+                "Koefisien variasi (CV) indeks harga pangan per negara pada rentang tahun terpilih. "
+                "Semakin merah, semakin volatil. Seret untuk memutar globe dan gunakan tombol +/- untuk memperbesar.",
                 html.Div(
                     [
-                        dbc.Row(
+                        html.Div(
                             [
-                                dbc.Col(
-                                    html.Div(
-                                        [
-                                            html.Div(
-                                                [
-                                                    _zoom_button("+", "zoom-in-btn"),
-                                                    _zoom_button("\u2212", "zoom-out-btn"),
-                                                ],
-                                                style={
-                                                    "position": "absolute",
-                                                    "top": "14px",
-                                                    "right": "14px",
-                                                    "zIndex": "1000",
-                                                    "display": "flex",
-                                                    "flexDirection": "column",
-                                                    "gap": "6px",
-                                                },
-                                            ),
-                                            dcc.Graph(
-                                                id="country-volatility-map",
-                                                config={
-                                                    "displayModeBar": False,
-                                                    "scrollZoom": False,
-                                                    "doubleClick": False,
-                                                },
-                                                style={"margin": "0"},
-                                            ),
-                                        ],
-                                        style={
-                                            "position": "relative",
-                                            "borderRadius": "10px",
-                                            "overflow": "hidden",
-                                            "background": (
-                                                "radial-gradient(circle at 46% 50%, "
-                                                "rgba(168, 203, 229, 0.55) 0%, "
-                                                "rgba(168, 203, 229, 0.16) 42%, "
-                                                "rgba(247, 246, 242, 0) 64%)"
-                                            ),
-                                        },
-                                    ),
-                                    lg=9,
-                                    md=8,
-                                    xs=12,
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                _zoom_button("+", "zoom-in-btn"),
+                                                _zoom_button("\u2212", "zoom-out-btn"),
+                                                _zoom_button("\u21BA", "geo-reset-btn", font_size="15px"),
+                                            ],
+                                            style={
+                                                "position": "absolute",
+                                                "top": "14px",
+                                                "right": "14px",
+                                                "zIndex": "5",
+                                                "display": "flex",
+                                                "flexDirection": "column",
+                                                "gap": "6px",
+                                            },
+                                        ),
+                                        dcc.Graph(
+                                            id="country-volatility-map",
+                                            config={
+                                                "displayModeBar": False,
+                                                "scrollZoom": False,
+                                                "doubleClick": False,
+                                            },
+                                            style={"margin": "0"},
+                                        ),
+                                    ],
+                                    style={
+                                        "position": "relative",
+                                        "zIndex": "0",
+                                        "flex": "75 1 0",
+                                        "minWidth": "340px",
+                                        "borderRadius": "10px",
+                                        "overflow": "hidden",
+                                        "background": (
+                                            "radial-gradient(circle at 46% 50%, "
+                                            "rgba(168, 203, 229, 0.55) 0%, "
+                                            "rgba(168, 203, 229, 0.16) 42%, "
+                                            "rgba(247, 246, 242, 0) 64%)"
+                                        ),
+                                    },
                                 ),
-                                dbc.Col(
-                                    html.Div(
-                                        id="country-detail-info",
-                                        children=_detail_placeholder(),
-                                        style={
-                                            "display": "flex",
-                                            "flexDirection": "column",
-                                            "flex": "1 1 auto",
-                                            "width": "100%",
-                                            "padding": "20px 22px",
-                                            "backgroundColor": "rgba(31, 42, 68, 0.03)",
-                                            "borderRadius": "10px",
-                                            "border": "1px solid rgba(31, 42, 68, 0.06)",
-                                            "height": "100%",
-                                            "minHeight": "300px",
-                                        },
-                                    ),
-                                    lg=3,
-                                    md=4,
-                                    xs=12,
-                                    className="d-flex align-items-stretch mt-4 mt-md-0",
+                                html.Div(
+                                    id="country-detail-info",
+                                    children=_detail_placeholder(),
+                                    style={
+                                        "display": "flex",
+                                        "flexDirection": "column",
+                                        "flex": "25 1 0",
+                                        "minWidth": "260px",
+                                        "padding": "20px 22px",
+                                        "backgroundColor": "rgba(31, 42, 68, 0.03)",
+                                        "borderRadius": "10px",
+                                        "border": "1px solid rgba(31, 42, 68, 0.06)",
+                                        "minHeight": "300px",
+                                    },
                                 ),
                             ],
-                            align="stretch",
-                            className="gx-4 gy-3",
+                            style={
+                                "display": "flex",
+                                "flexWrap": "wrap",
+                                "gap": "24px",
+                                "alignItems": "stretch",
+                            },
                         ),
                         html.Div(
                             [
                                 html.Div(
-                                    id="country-trend-title",
-                                    children="Tren Indeks Harga Negara Terpilih",
-                                    style={
-                                        "fontSize": "15px",
-                                        "fontWeight": "600",
-                                        "color": "var(--text-main)",
-                                        "margin": "0 0 2px 0",
-                                    },
+                                    [
+                                        html.Div(
+                                            "Top 10 Komoditas Paling Volatil",
+                                            style={
+                                                "fontSize": "15px",
+                                                "fontWeight": "600",
+                                                "color": "var(--text-main)",
+                                                "margin": "0 0 2px 0",
+                                            },
+                                        ),
+                                        html.Div(
+                                            id="country-top-commodities-sub",
+                                            children="Berdasarkan koefisien variasi (CV) per komoditas.",
+                                            style={
+                                                "fontSize": "12px",
+                                                "color": LABEL_DARK,
+                                                "margin": "0 0 8px 0",
+                                            },
+                                        ),
+                                        dcc.Graph(
+                                            id="country-top-commodities",
+                                            config={"displayModeBar": False, "responsive": True},
+                                        ),
+                                    ],
+                                    style={"flex": "42 1 0", "minWidth": "300px"},
                                 ),
                                 html.Div(
-                                    "Median indeks harga bulanan (base = 100) seluruh komoditas, "
-                                    "mengikuti rentang tahun pada header.",
-                                    style={
-                                        "fontSize": "12px",
-                                        "color": "var(--text-sub)",
-                                        "margin": "0 0 8px 0",
-                                    },
-                                ),
-                                dcc.Graph(
-                                    id="country-trend-chart",
-                                    config={"displayModeBar": False, "responsive": True},
+                                    [
+                                        html.Div(
+                                            id="country-trend-title",
+                                            children="Tren Harga Negara Terpilih",
+                                            style={
+                                                "fontSize": "15px",
+                                                "fontWeight": "600",
+                                                "color": "var(--text-main)",
+                                                "margin": "0 0 2px 0",
+                                            },
+                                        ),
+                                        html.Div(
+                                            "Median harga bulanan (USD) seluruh komoditas, "
+                                            "mengikuti rentang tahun pada header.",
+                                            style={
+                                                "fontSize": "12px",
+                                                "color": LABEL_DARK,
+                                                "margin": "0 0 8px 0",
+                                            },
+                                        ),
+                                        dcc.Graph(
+                                            id="country-trend-chart",
+                                            config={"displayModeBar": False, "responsive": True},
+                                        ),
+                                    ],
+                                    style={"flex": "58 1 0", "minWidth": "300px"},
                                 ),
                             ],
                             style={
+                                "display": "flex",
+                                "flexWrap": "wrap",
+                                "gap": "24px",
                                 "marginTop": "28px",
                                 "paddingTop": "20px",
                                 "borderTop": "1px solid rgba(31, 42, 68, 0.08)",
@@ -292,9 +380,9 @@ def update_country_map(year_range):
             colorscale=[[p, h] for p, h in COLORSCALE],
             text=cv["country_name"],
             customdata=cv[["cv_index", "country_name", "countryiso3"]].values,
-            hovertemplate="<b>%{customdata[1]}</b> (%{customdata[2]})<br>CV Index: %{customdata[0]:.3f}<extra></extra>",
+            hovertemplate="<b>%{customdata[1]}</b> (%{customdata[2]})<br>Indeks CV: %{customdata[0]:.3f}<extra></extra>",
             colorbar=dict(
-                title=dict(text="CV Index", side="top"),
+                title=dict(text="Indeks CV", side="top"),
                 thickness=12,
                 len=0.55,
                 x=0.97,
@@ -320,8 +408,8 @@ def update_country_map(year_range):
         uirevision="geo-globe",
         geo=dict(
             projection_type="orthographic",
-            projection_scale=0.92,
-            projection_rotation=dict(lon=10, lat=12, roll=0),
+            projection_scale=INIT_SCALE,
+            projection_rotation=dict(lon=INIT_LON, lat=INIT_LAT, roll=0),
             showland=True,
             landcolor="#e7e1d6",
             showocean=True,
@@ -349,17 +437,26 @@ def update_country_map(year_range):
 
 clientside_callback(
     """
-    function(zoomIn, zoomOut) {
+    function(zoomIn, zoomOut, reset) {
         var ctx = window.dash_clientside.callback_context;
         if (!ctx || !ctx.triggered || ctx.triggered.length === 0) {
             return window.dash_clientside.no_update;
         }
         var trigId = ctx.triggered[0].prop_id.split('.')[0];
-        if (trigId !== 'zoom-in-btn' && trigId !== 'zoom-out-btn') {
-            return window.dash_clientside.no_update;
-        }
         var gd = document.querySelector('#country-volatility-map .js-plotly-plot');
         if (!gd || !gd._fullLayout || !gd._fullLayout.geo) {
+            return window.dash_clientside.no_update;
+        }
+        if (trigId === 'geo-reset-btn') {
+            window.Plotly.relayout(gd, {
+                'geo.projection.rotation.lon': 10,
+                'geo.projection.rotation.lat': 12,
+                'geo.projection.rotation.roll': 0,
+                'geo.projection.scale': 0.92
+            });
+            return window.dash_clientside.no_update;
+        }
+        if (trigId !== 'zoom-in-btn' && trigId !== 'zoom-out-btn') {
             return window.dash_clientside.no_update;
         }
         var cur = 0.92;
@@ -379,6 +476,7 @@ clientside_callback(
     Output("geo-zoom-dummy", "data"),
     Input("zoom-in-btn", "n_clicks"),
     Input("zoom-out-btn", "n_clicks"),
+    Input("geo-reset-btn", "n_clicks"),
 )
 
 
@@ -388,11 +486,7 @@ clientside_callback(
     Input("year-slider", "value"),
 )
 def display_country_info(clickData, year_range):
-    if not clickData or "points" not in clickData or len(clickData["points"]) == 0:
-        return _detail_placeholder()
-
-    point = clickData["points"][0]
-    country_iso = point.get("location")
+    country_iso = _clicked_iso(clickData)
     if not country_iso:
         return _detail_placeholder()
 
@@ -405,7 +499,7 @@ def display_country_info(clickData, year_range):
     if country_data.empty:
         return _detail_message(
             f"Tidak ada data untuk {country_name} ({country_iso}) "
-            f"pada rentang tahun {year_start}–{year_end}."
+            f"pada rentang tahun {year_start}-{year_end}."
         )
 
     row = country_data.iloc[0]
@@ -415,7 +509,7 @@ def display_country_info(clickData, year_range):
     t = 0.0 if cv_max == cv_min else (float(row["cv_index"]) - cv_min) / (cv_max - cv_min)
     base_rgb = _scale_color_rgb(t)
     border_hex = _rgb_to_hex(base_rgb)
-    number_hex = _rgb_to_hex(_blend(base_rgb, (0, 0, 0), 0.42))
+    number_hex = _rgb_to_hex(_blend(base_rgb, (0, 0, 0), 0.45))
     bg_tint = "rgba(%d, %d, %d, 0.14)" % tuple(int(round(c)) for c in base_rgb)
 
     def stat(label, value):
@@ -423,17 +517,23 @@ def display_country_info(clickData, year_range):
             [
                 html.Div(
                     label,
-                    style={"fontSize": "11px", "color": "var(--text-sub)", "marginBottom": "4px"},
+                    style={"fontSize": "11px", "color": LABEL_DARK, "marginBottom": "4px"},
                 ),
                 html.Div(
                     value,
-                    style={"fontSize": "20px", "fontWeight": "600", "color": "var(--text-main)"},
+                    style={
+                        "fontSize": "20px",
+                        "fontWeight": "600",
+                        "color": "var(--text-main)",
+                        "overflowWrap": "anywhere",
+                    },
                 ),
             ],
             style={
                 "display": "flex",
                 "flexDirection": "column",
                 "justifyContent": "center",
+                "minWidth": "0",
                 "padding": "12px 14px",
                 "backgroundColor": "var(--card-bg)",
                 "borderRadius": "6px",
@@ -447,20 +547,25 @@ def display_country_info(clickData, year_range):
                 [
                     html.Div(
                         country_name,
-                        style={"fontSize": "18px", "fontWeight": "700", "color": "var(--text-main)"},
+                        style={
+                            "fontSize": "18px",
+                            "fontWeight": "700",
+                            "color": "var(--text-main)",
+                            "overflowWrap": "anywhere",
+                        },
                     ),
                     html.Div(
-                        f"{country_iso} \u00b7 {year_start}\u2013{year_end}",
-                        style={"fontSize": "12px", "color": "var(--text-sub)", "marginTop": "2px"},
+                        f"{country_iso} \u00b7 {year_start}-{year_end}",
+                        style={"fontSize": "12px", "color": LABEL_DARK, "fontWeight": "500", "marginTop": "2px"},
                     ),
                 ],
-                style={"marginBottom": "16px", "flex": "0 0 auto"},
+                style={"marginBottom": "16px", "flex": "0 0 auto", "minWidth": "0"},
             ),
             html.Div(
                 [
                     html.Span(
                         "Indeks Volatilitas (CV)",
-                        style={"fontSize": "11px", "color": "var(--text-sub)"},
+                        style={"fontSize": "11px", "color": LABEL_DARK, "fontWeight": "500"},
                     ),
                     html.Div(
                         f"{row['cv_index']:.3f}",
@@ -469,6 +574,7 @@ def display_country_info(clickData, year_range):
                             "fontWeight": "700",
                             "color": number_hex,
                             "lineHeight": "1.1",
+                            "overflowWrap": "anywhere",
                         },
                     ),
                 ],
@@ -479,6 +585,7 @@ def display_country_info(clickData, year_range):
                     "borderLeft": f"4px solid {border_hex}",
                     "marginBottom": "16px",
                     "flex": "0 0 auto",
+                    "minWidth": "0",
                 },
             ),
             html.Div(
@@ -492,10 +599,11 @@ def display_country_info(clickData, year_range):
                 ],
                 style={
                     "display": "grid",
-                    "gridTemplateColumns": "1fr 1fr",
+                    "gridTemplateColumns": "repeat(auto-fit, minmax(110px, 1fr))",
                     "gridAutoRows": "1fr",
                     "gap": "10px",
                     "flex": "1 1 auto",
+                    "minWidth": "0",
                 },
             ),
         ],
@@ -503,8 +611,72 @@ def display_country_info(clickData, year_range):
             "display": "flex",
             "flexDirection": "column",
             "height": "100%",
+            "minWidth": "0",
         },
     )
+
+
+@callback(
+    Output("country-top-commodities", "figure"),
+    Output("country-top-commodities-sub", "children"),
+    Input("country-volatility-map", "clickData"),
+    Input("year-slider", "value"),
+)
+def update_top_commodities(clickData, year_range):
+    country_iso = _clicked_iso(clickData)
+    sub_default = "Berdasarkan koefisien variasi (CV) per komoditas."
+
+    if not country_iso:
+        return _empty_fig("Klik negara pada globe untuk melihat komoditasnya", 320), sub_default
+
+    year_start, year_end = _resolve_years(year_range)
+    cv = _commodity_volatility_for_country(country_iso, year_start, year_end)
+    country_name = _iso_to_name(country_iso)
+    sub_text = f"{country_name} ({country_iso}) \u00b7 {year_start}-{year_end}"
+
+    if cv.empty:
+        return _empty_fig("Tidak ada data komoditas pada rentang ini", 320), sub_text
+
+    top = cv.head(10).reset_index(drop=True)
+    top_colors = [SPECTRUM[4], SPECTRUM[3], SPECTRUM[2]]
+    colors = [top_colors[i] if i < 3 else COLORS["text_sub"] for i in range(len(top))]
+
+    top_rev = top.iloc[::-1]
+    colors_rev = colors[::-1]
+    vals = top_rev["cv_index"].tolist()
+    labels = [COMMODITY_ID.get(c, c) for c in top_rev["commodity"].tolist()]
+
+    fig = go.Figure(
+        data=go.Bar(
+            x=top_rev["cv_index"],
+            y=labels,
+            orientation="h",
+            marker=dict(color=colors_rev, line=dict(width=0)),
+            text=[f"{v:.2f}" for v in vals],
+            textposition="outside",
+            textfont=dict(size=10, color=COLORS["text_sub"]),
+            hovertemplate="<b>%{y}</b><br>Indeks CV: %{x:.3f}<extra></extra>",
+            cliponaxis=False,
+        )
+    )
+
+    fig.update_layout(
+        **PLOTLY_LAYOUT,
+        height=320,
+        xaxis=dict(title="Indeks CV", showgrid=True, gridcolor="rgba(0,0,0,0.05)", zeroline=False),
+        yaxis=dict(
+            title="Komoditas",
+            automargin=True,
+            tickfont=dict(size=11),
+            ticks="outside",
+            ticklen=12,
+            tickcolor="rgba(0,0,0,0)",
+        ),
+        bargap=0.35,
+    )
+    fig.update_layout(margin=dict(l=10, r=40, t=10, b=40))
+
+    return fig, sub_text
 
 
 @callback(
@@ -514,30 +686,10 @@ def display_country_info(clickData, year_range):
     Input("year-slider", "value"),
 )
 def update_country_trend(clickData, year_range):
-    country_iso = None
-    if clickData and "points" in clickData and len(clickData["points"]) > 0:
-        country_iso = clickData["points"][0].get("location")
+    country_iso = _clicked_iso(clickData)
 
     if not country_iso:
-        fig = go.Figure()
-        fig.update_layout(
-            **PLOTLY_LAYOUT,
-            height=300,
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False),
-            annotations=[
-                dict(
-                    text="Klik negara pada globe untuk menampilkan tren indeks harganya",
-                    showarrow=False,
-                    font=dict(size=13, color=COLORS["text_sub"]),
-                    xref="paper",
-                    yref="paper",
-                    x=0.5,
-                    y=0.5,
-                )
-            ],
-        )
-        return fig, "Tren Indeks Harga Negara Terpilih"
+        return _empty_fig("Klik negara pada globe untuk menampilkan tren harganya", 320), "Tren Harga Negara Terpilih"
 
     df = get_country_detail(country_iso).copy()
     df["_year"] = pd.to_datetime(df["year_month"]).dt.year
@@ -545,50 +697,31 @@ def update_country_trend(clickData, year_range):
         df = df[(df["_year"] >= int(year_range[0])) & (df["_year"] <= int(year_range[1]))]
 
     country_name = _iso_to_name(country_iso)
-    title = f"Tren Indeks Harga — {country_name} ({country_iso})"
-
-    fig = go.Figure()
+    title = f"Tren Harga di {country_name} ({country_iso})"
 
     if df.empty:
-        fig.update_layout(
-            **PLOTLY_LAYOUT,
-            height=300,
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False),
-            annotations=[
-                dict(
-                    text="Tidak ada data pada rentang tahun ini",
-                    showarrow=False,
-                    font=dict(size=13, color=COLORS["text_sub"]),
-                    xref="paper",
-                    yref="paper",
-                    x=0.5,
-                    y=0.5,
-                )
-            ],
-        )
-        return fig, title
+        return _empty_fig("Tidak ada data pada rentang tahun ini", 320), title
 
     monthly = (
-        df.groupby("year_month")["price_index"].median().reset_index(name="median_index")
+        df.groupby("year_month")["usdprice"].median().reset_index(name="median_price")
     )
     monthly = monthly.sort_values("year_month")
+
+    fig = go.Figure()
 
     fig.add_trace(
         go.Scatter(
             x=monthly["year_month"],
-            y=monthly["median_index"],
+            y=monthly["median_price"],
             mode="lines",
-            name="Median Indeks",
+            name="Median Harga",
             line=dict(color=COLORS["spectrum_4"], width=2.5),
-            fill="tozeroy",
-            fillcolor="rgba(203, 87, 63, 0.08)",
-            hovertemplate="<b>%{x|%b %Y}</b><br>Indeks: %{y:.1f}<extra></extra>",
+            hovertemplate="<b>%{x|%Y-%m}</b><br>Median: $%{y:.2f}<extra></extra>",
         )
     )
 
     if len(monthly) >= 6:
-        monthly["smoothed"] = monthly["median_index"].rolling(6, center=True).mean()
+        monthly["smoothed"] = monthly["median_price"].rolling(6, center=True).mean()
         fig.add_trace(
             go.Scatter(
                 x=monthly["year_month"],
@@ -596,26 +729,15 @@ def update_country_trend(clickData, year_range):
                 mode="lines",
                 name="Rata-rata 6 bulan",
                 line=dict(color=COLORS["text_sub"], width=1.5, dash="dash"),
-                hovertemplate="<b>%{x|%b %Y}</b><br>Smoothed: %{y:.1f}<extra></extra>",
+                hovertemplate="<b>%{x|%Y-%m}</b><br>Smoothed: $%{y:.2f}<extra></extra>",
             )
         )
-
-    fig.add_hline(
-        y=100,
-        line_dash="dot",
-        line_color="rgba(31, 42, 68, 0.35)",
-        line_width=1,
-        annotation_text="Base = 100",
-        annotation_position="bottom right",
-        annotation_font_size=10,
-        annotation_font_color=COLORS["text_sub"],
-    )
 
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=320,
-        xaxis=dict(title=None, showgrid=False, dtick="M12", tickformat="%Y"),
-        yaxis=dict(title="Indeks Harga", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
+        xaxis=dict(title="Tahun", showgrid=False, dtick="M12", tickformat="%Y-%m"),
+        yaxis=dict(title="Harga (USD)", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
         hovermode="x unified",
         dragmode=False,
