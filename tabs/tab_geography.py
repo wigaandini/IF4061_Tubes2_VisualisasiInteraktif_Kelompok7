@@ -11,7 +11,7 @@ def geography_layout():
         [
             make_chart_card(
                 "Persebaran Geografis Volatilitas Harga",
-                "Koefisien variasi (CV) indeks harga pangan per negara — semakin merah, semakin volatil",
+                "Koefisien variasi (CV) indeks harga pangan per negara, semakin merah, semakin volatil",
                 html.Div(
                     [
                         dcc.Graph(id="country-volatility-map", config={"displayModeBar": False}, style={"margin": "0"}),

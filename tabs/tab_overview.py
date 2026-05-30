@@ -27,7 +27,7 @@ EVENTS = [
 def overview_layout():
     return html.Div(
         [
-            dbc.Row(id="kpi-row", className="mt-4 mb-4"),
+            dbc.Row(id="kpi-row", className="mb-4"),
             html.Div(
                 [
                     html.Div(
@@ -75,7 +75,7 @@ def overview_layout():
             ),
             make_chart_card(
                 "Intensitas Gejolak per Kategori Pangan",
-                "Perubahan harga month-over-month (%) per kategori — semakin gelap, semakin bergejolak",
+                "Perubahan harga month-over-month (%) per kategori, semakin gelap, semakin bergejolak",
                 html.Div(
                     [
                         dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
@@ -272,7 +272,7 @@ def update_heatmap_insight(year_range):
         html.Li(
             [
                 html.Span(f"{cat.title()}", style={"fontWeight": "600"}),
-                html.Span(f" — {val:.2f}%", style={"color": "var(--highlight)", "fontWeight": "600"}),
+                html.Span(f" ({val:.2f}%)", style={"color": "var(--highlight)", "fontWeight": "600"}),
             ],
             style={"marginBottom": "4px", "fontSize": "13px", "color": "var(--text-main)"},
         )
