@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
@@ -9,12 +9,56 @@ from utils.components import make_chart_card, PLOTLY_LAYOUT, COLORS
 def geography_layout():
     return html.Div(
         [
+            dcc.Store(id="geo-zoom-level", data=1.0),
             make_chart_card(
                 "Persebaran Geografis Volatilitas Harga",
                 "Koefisien variasi (CV) indeks harga pangan per negara — semakin merah, semakin volatil",
                 html.Div(
                     [
-                        dcc.Graph(id="country-volatility-map", config={"displayModeBar": False}, style={"margin": "0"}),
+                        html.Div(
+                            style={
+                                "position": "absolute",
+                                "top": "12px",
+                                "left": "12px",
+                                "zIndex": "1000",
+                                "display": "flex",
+                                "gap": "4px",
+                            },
+                            children=[
+                                html.Button(
+                                    "+",
+                                    id="zoom-in-btn",
+                                    style={
+                                        "padding": "8px 12px",
+                                        "backgroundColor": "#1F2A44",
+                                        "color": "white",
+                                        "border": "none",
+                                        "borderRadius": "4px",
+                                        "cursor": "pointer",
+                                        "fontSize": "14px",
+                                        "fontWeight": "bold",
+                                    }
+                                ),
+                                html.Button(
+                                    "-",
+                                    id="zoom-out-btn",
+                                    style={
+                                        "padding": "8px 12px",
+                                        "backgroundColor": "#1F2A44",
+                                        "color": "white",
+                                        "border": "none",
+                                        "borderRadius": "4px",
+                                        "cursor": "pointer",
+                                        "fontSize": "14px",
+                                        "fontWeight": "bold",
+                                    }
+                                ),
+                            ]
+                        ),
+                        dcc.Graph(id="country-volatility-map", config={
+                            "displayModeBar": False,
+                            "scrollZoom": False,
+                        }, style={"margin": "0"}),
                         html.Div(id="country-detail-info", style={
                             "marginTop": "12px",
                             "padding": "16px",
@@ -22,7 +66,8 @@ def geography_layout():
                             "borderRadius": "6px",
                             "minHeight": "80px",
                         })
-                    ]
+                    ],
+                    style={"position": "relative"}
                 ),
             )
         ]
@@ -32,8 +77,9 @@ def geography_layout():
 @callback(
     Output("country-volatility-map", "figure"),
     Input("year-slider", "value"),
+    Input("geo-zoom-level", "data"),
 )
-def update_country_map(year_range):
+def update_country_map(year_range, zoom_level):
     cv = load_country_volatility()
 
     try:
@@ -72,7 +118,8 @@ def update_country_map(year_range):
         **PLOTLY_LAYOUT,
         height=650,
         geo=dict(
-            projection_type="natural earth",
+            projection_type="orthographic",
+            projection_scale=zoom_level,
             showland=True,
             landcolor="#d8d3cb",
             showcoastlines=True,
@@ -80,11 +127,38 @@ def update_country_map(year_range):
             showcountries=True,
             countrycolor="#D2DADC",
             countrywidth=0.5,
+            bgcolor="rgba(200, 220, 240, 0.3)",
         ),
         hovermode="closest",
     )
 
     return fig
+
+
+@callback(
+    Output("geo-zoom-level", "data"),
+    Input("zoom-in-btn", "n_clicks"),
+    Input("zoom-out-btn", "n_clicks"),
+    State("geo-zoom-level", "data"),
+)
+def handle_zoom_buttons(zoom_in_clicks, zoom_out_clicks, current_zoom):
+    current_zoom = current_zoom or 1.0
+    
+    # Determine which button was clicked
+    if zoom_in_clicks and zoom_out_clicks:
+        # Both have been clicked, check which one was clicked more recently
+        diff = zoom_in_clicks - zoom_out_clicks
+    elif zoom_in_clicks:
+        diff = 1
+    elif zoom_out_clicks:
+        diff = -1
+    else:
+        diff = 0
+    
+    # Update zoom level (min 0.5, max 3.0)
+    new_zoom = max(0.5, min(3.0, current_zoom + (diff * 0.3)))
+    
+    return new_zoom
 
 
 @callback(
