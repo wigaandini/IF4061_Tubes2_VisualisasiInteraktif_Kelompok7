@@ -27,14 +27,15 @@ PLOTLY_LAYOUT = dict(
 )
 
 SPECTRUM = ["#F5C49C", "#EF8D5A", "#E26A4E", "#CB573F", "#D93A2F"]
+
 CATEGORY_COLORS = {
-    "cereals and tubers": "#E69F00",
-    "meat, fish and eggs": "#56B4E9",
-    "vegetables and fruits": "#009E73",
-    "pulses and nuts": "#D55E00",
-    "oil and fats": "#0072B2",
-    "milk and dairy": "#CC79A7",
-    "miscellaneous food": "#F0E442",
+    "Serealia & Umbi": "#E69F00",
+    "Daging, Ikan & Telur": "#56B4E9",
+    "Sayuran & Buah": "#009E73",
+    "Kacang-kacangan": "#D55E00",
+    "Minyak & Lemak": "#0072B2",
+    "Susu & Olahan Susu": "#CC79A7",
+    "Pangan Lainnya": "#F0E442",
 }
 
 
@@ -57,12 +58,7 @@ def make_chart_card(title, subtitle, chart_component, insight=None):
         chart_component,
     ]
     if insight:
-        children.append(
-            html.Div(
-                insight,
-                className="insight-strip",
-            )
-        )
+        children.append(html.Div(insight, className="insight-strip"))
     return html.Div(children, className="chart-card")
 
 

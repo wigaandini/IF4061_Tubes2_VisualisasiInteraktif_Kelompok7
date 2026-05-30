@@ -1,105 +1,95 @@
 import dash
-from dash import html, dcc
+from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
+
+from utils.data_loader import get_year_range
+from utils.components import COLORS
+from tabs.tab_overview import overview_layout
+from tabs.tab_commodity import commodity_layout
+from tabs.tab_geography import geography_layout
 
 app = dash.Dash(
     __name__,
-    use_pages=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     suppress_callback_exceptions=True,
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
-    title="Food Price Volatility Dashboard",
+    title="Dinamika Pasar Pangan Global",
 )
 
 server = app.server
 
-SIDEBAR_STYLE = {
-    "width": "240px",
-    "minHeight": "100vh",
-    "background": "#1F2A44",
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "zIndex": 100,
-    "overflowY": "auto",
-}
+min_year, max_year = get_year_range()
 
-sidebar = html.Div(
+header = html.Div(
     [
-        html.Div(
+        dbc.Row(
             [
-                html.H4(
-                    "WFP Food Prices",
-                    style={"color": "#F7F6F2", "fontWeight": "700", "marginBottom": "4px"},
+                dbc.Col(
+                    [
+                        html.H1("Dinamika Pasar Pangan Global", className="header-title"),
+                        html.P(
+                            "Volatilitas & Resiliensi Harga Pangan Dunia 2016–2026",
+                            className="header-subtitle",
+                        ),
+                    ],
+                    md=5,
+                    className="d-flex flex-column justify-content-center",
                 ),
-                html.P(
-                    "Global Volatility Dashboard",
-                    style={"color": "#F5C49C", "fontSize": "13px", "marginBottom": "0"},
-                ),
-                html.P(
-                    "2016 – 2026",
-                    style={"color": "#4F5D75", "fontSize": "12px"},
+                dbc.Col(
+                    [
+                        html.Div("RENTANG TAHUN", className="filter-label"),
+                        dcc.RangeSlider(
+                            id="year-slider",
+                            min=min_year,
+                            max=max_year,
+                            step=1,
+                            value=[min_year, max_year],
+                            marks={y: str(y) for y in range(min_year, max_year + 1, 2)},
+                            tooltip={"placement": "bottom"},
+                        ),
+                    ],
+                    md=7,
+                    className="d-flex flex-column justify-content-center",
                 ),
             ],
-            style={"padding": "24px 20px 16px"},
-        ),
-        html.Hr(style={"borderColor": "#2a3a5c", "margin": "0 20px"}),
-        dbc.Nav(
-            [
-                dbc.NavLink(
-                    [html.Span("📊", style={"marginRight": "10px"}), "Overview"],
-                    href="/",
-                    active="exact",
-                    className="sidebar-link",
-                ),
-                dbc.NavLink(
-                    [html.Span("🌾", style={"marginRight": "10px"}), "Commodity Trends"],
-                    href="/commodity-trends",
-                    active="exact",
-                    className="sidebar-link",
-                ),
-                # === Halaman tim lain (akan ditambahkan oleh masing-masing) ===
-                # dbc.NavLink([html.Span("🌾"), " Commodity Explorer"], href="/commodity", active="exact", className="sidebar-link"),
-                # dbc.NavLink([html.Span("🌍"), " Geographic Explorer"], href="/geography", active="exact", className="sidebar-link"),
-                # dbc.NavLink([html.Span("🔬"), " Deep Dive"], href="/deep-dive", active="exact", className="sidebar-link"),
-                # dbc.NavLink([html.Span("ℹ️"), " About"], href="/about", active="exact", className="sidebar-link"),
-            ],
-            vertical=True,
-            pills=True,
-            style={"padding": "16px 12px"},
-        ),
-        html.Div(
-            [
-                html.Hr(style={"borderColor": "#2a3a5c", "margin": "0 8px 12px"}),
-                html.P(
-                    "Kelompok 7 — IF4061",
-                    style={"color": "#4F5D75", "fontSize": "11px", "textAlign": "center"},
-                ),
-                html.P(
-                    "Institut Teknologi Bandung",
-                    style={"color": "#4F5D75", "fontSize": "11px", "textAlign": "center", "marginTop": "-8px"},
-                ),
-            ],
-            style={"position": "absolute", "bottom": "16px", "width": "100%"},
+            align="center",
         ),
     ],
-    style=SIDEBAR_STYLE,
-    className="sidebar",
+    className="sticky-header",
 )
 
-content = html.Div(
-    dash.page_container,
-    className="main-content",
+tabs = dbc.Tabs(
+    [
+        dbc.Tab(overview_layout(), label="📊  Gambaran Umum", tab_id="overview"),
+        dbc.Tab(commodity_layout(), label="🌾  Komoditas", tab_id="commodity"),
+        dbc.Tab(geography_layout(), label="🌍  Geografi", tab_id="geography"),
+    ],
+    id="main-tabs",
+    active_tab="overview",
+    className="dashboard-tabs",
+)
+
+footer = html.Div(
+    [
+        html.Span("Sumber: WFP Global Food Prices Database • CC BY-IGO"),
+        html.Span(" · "),
+        html.Span("Kelompok 7 — IF4061 Visualisasi Data • ITB 2026"),
+    ],
+    className="dashboard-footer",
 )
 
 app.layout = html.Div(
     [
-        dcc.Location(id="url"),
-        sidebar,
-        content,
+        header,
+        html.Div(tabs, className="main-content"),
+        footer,
     ],
     className="app-container",
 )
+
+import tabs.tab_overview
+import tabs.tab_commodity
+import tabs.tab_geography
 
 if __name__ == "__main__":
     app.run(debug=True, port=8050)
