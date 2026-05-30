@@ -590,7 +590,7 @@ def display_country_info(clickData, year_range):
             ),
             html.Div(
                 [
-                    stat("Periode Data", f"{int(row['n_months'])} bln"),
+                    stat("Periode Data", f"{int(row['n_months'])} bulan"),
                     stat("Rata-rata Indeks", f"{row['mean_index']:.1f}"),
                     stat("Std. Deviasi Indeks", f"{row['std_index']:.1f}"),
                     stat("Rata-rata MoM", f"{row['mean_mom_change']:.2f}%"),
