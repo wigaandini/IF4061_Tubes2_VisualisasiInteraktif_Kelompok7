@@ -178,6 +178,22 @@ def layout():
                     config={"displayModeBar": False},
                 ),
                 insight="Rice, soybeans, dan peas secara bergantian mendominasi peringkat atas volatilitas sepanjang 2016-2026, tetapi ketiganya menunjukkan pola yang sama berupa peningkatan volatilitas yang saling terhubung. Hal ini mencerminkan pergeseran titik tekanan dalam sistem pangan global yang semakin berkaitan sejak 2016."
+            ),
+            make_chart_card(
+                "Persebaran Geografis Volatilitas Harga",
+                "Koefisien variasi (CV) indeks harga pangan per negara — semakin merah, semakin volatil",
+                html.Div(
+                    [
+                        dcc.Graph(id="country-volatility-map", config={"displayModeBar": False}, style={"margin": "0"}),
+                        html.Div(id="country-detail-info", style={
+                            "marginTop": "12px",
+                            "padding": "16px",
+                            "backgroundColor": "rgba(31, 42, 68, 0.03)",
+                            "borderRadius": "6px",
+                            "minHeight": "80px",
+                        })
+                    ]
+                ),
             )
         ]
     )
