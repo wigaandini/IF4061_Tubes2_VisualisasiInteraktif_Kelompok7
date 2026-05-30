@@ -590,7 +590,7 @@ def display_country_info(clickData, year_range):
             ),
             html.Div(
                 [
-                    stat("Periode Data", f"{int(row['n_months'])} bulan"),
+                    stat("Periode Data", f"{int(row['n_months'])} bln"),
                     stat("Rata-rata Indeks", f"{row['mean_index']:.1f}"),
                     stat("Std. Deviasi Indeks", f"{row['std_index']:.1f}"),
                     stat("Rata-rata MoM", f"{row['mean_mom_change']:.2f}%"),
@@ -652,6 +652,9 @@ def update_top_commodities(clickData, year_range):
             y=labels,
             orientation="h",
             marker=dict(color=colors_rev, line=dict(width=0)),
+            text=[f"{v:.2f}" for v in vals],
+            textposition="outside",
+            textfont=dict(size=10, color=COLORS["text_sub"]),
             hovertemplate="<b>%{y}</b><br>Indeks CV: %{x:.3f}<extra></extra>",
             cliponaxis=False,
         )
@@ -733,11 +736,25 @@ def update_country_trend(clickData, year_range):
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=320,
-        xaxis=dict(title="Tahun", showgrid=False, dtick="M12", tickformat="%Y-%m"),
-        yaxis=dict(title="Harga (USD)", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
+        xaxis=dict(
+            title=dict(text="Tahun", standoff=20),
+            showgrid=False,
+            dtick="M12",
+            tickformat="%Y-%m",
+            automargin=True,
+            ticklabelstandoff=8,
+        ),
+        yaxis=dict(
+            title=dict(text="Harga (USD)", standoff=20),
+            showgrid=True,
+            gridcolor="rgba(0,0,0,0.05)",
+            automargin=True,
+            ticklabelstandoff=8,
+        ),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
         hovermode="x unified",
         dragmode=False,
     )
+    fig.update_layout(margin=dict(l=70, r=20, t=20, b=60))
 
     return fig, title
