@@ -12,6 +12,7 @@ from utils.data_loader import (
     get_global_monthly_trend,
     get_unique_categories,
     get_year_range,
+    get_category_heatmap_data,
 )
 from utils.components import (
     make_kpi_card,
@@ -204,14 +205,12 @@ def layout():
     Input("year-slider", "value"),
 )
 def update_heatmap(year_range):
-    hm = load_category_heatmap()
+    if year_range:
+        start_year, end_year = int(year_range[0]), int(year_range[1])
+    else:
+        start_year, end_year = get_year_range()
 
-    hm_filtered = hm.copy()
-    hm_filtered["_year"] = pd.to_datetime(hm_filtered["year_month"]).dt.year
-    
-    hm_filtered = hm_filtered[
-        (hm_filtered["_year"] >= 2016) & (hm_filtered["_year"] <= hm_filtered["_year"].max())
-    ]
+    hm_filtered = get_category_heatmap_data((start_year, end_year))
 
     pivot = hm_filtered.pivot_table(
         index="category", columns="year_month", values="mom_change_pct", aggfunc="mean", dropna=False
@@ -222,7 +221,7 @@ def update_heatmap(year_range):
     x_positions = list(range(len(x_labels)))
     tickvals = []
     ticktext = []
-    
+
     for i, label in enumerate(x_labels):
         try:
             date = pd.to_datetime(label)
@@ -232,43 +231,64 @@ def update_heatmap(year_range):
         except:
             pass
 
+    bulan_id = {
+        1: "Januari", 2: "Februari", 3: "Maret", 4: "April",
+        5: "Mei", 6: "Juni", 7: "Juli", 8: "Agustus",
+        9: "September", 10: "Oktober", 11: "November", 12: "Desember",
+    }
+    x_display = []
+    for label in x_labels:
+        try:
+            d = pd.to_datetime(label)
+            x_display.append(f"{bulan_id[d.month]} {d.year}")
+        except (ValueError, TypeError):
+            x_display.append(str(label))
+
+    customdata = [list(x_display) for _ in range(len(pivot.index))]
+
     fig = go.Figure(
         data=go.Heatmap(
             z=pivot.values,
             x=x_positions,
             y=[c.title() for c in pivot.index.tolist()],
             colorscale=[
-                [0, "#F7F6F2"], [0.25, COLORS["spectrum_1"]],
-                [0.5, COLORS["spectrum_2"]], [0.75, COLORS["spectrum_3"]],
-                [1, COLORS["spectrum_4"]],
+                [0, "#F7F6F2"],
+                [0.33, "#F4A261"],
+                [0.66, "#E76F51"],
+                [1, "#C8553D"],
             ],
-            customdata=x_labels,
+            customdata=customdata,
             hovertemplate="<b>%{y}</b><br>Bulan: %{customdata}<br>MoM Change: %{z:.1f}%<extra></extra>",
             colorbar=dict(title="MoM %", titleside="right", thickness=12, len=0.9),
         )
     )
-    
+
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=420,
+        uirevision=f"heatmap-{start_year}-{end_year}",
+        dragmode="zoom",
         xaxis=dict(
             title=None,
             showgrid=False,
             tickangle=-45,
-            tickmode='array',
+            tickmode="array",
             tickvals=tickvals,
             ticktext=ticktext,
             tickfont=dict(size=8),
             showticklabels=True,
-            range=[-2, len(x_positions) - 1],
+            autorange=True,
         ),
-        yaxis=dict(title=None, showgrid=False),
+        yaxis=dict(
+            title=None,
+            showgrid=False,
+            autorange=True,
+        ),
     )
-    
+
     current_margin = fig.layout.margin
     fig.update_layout(margin=dict(l=80, r=current_margin.r, t=current_margin.t, b=100))
     return fig
-
 
 @callback(
     Output("global-trend-chart", "figure"),

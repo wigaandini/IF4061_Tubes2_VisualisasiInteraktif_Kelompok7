@@ -61,6 +61,12 @@ def get_unique_categories():
     hm = load_category_heatmap()
     return sorted(hm["category"].dropna().unique().tolist())
 
+def get_category_heatmap_data(year_range=None):
+    df = load_category_heatmap().copy()
+    df["_year"] = pd.to_datetime(df["year_month"]).dt.year
+    if year_range:
+        df = df[(df["_year"] >= year_range[0]) & (df["_year"] <= year_range[1])]
+    return df
 
 def get_unique_commodities():
     df = load_monthly_index()
