@@ -1,9 +1,11 @@
+from functools import lru_cache
+
 from dash import html, dcc, callback, clientside_callback, Input, Output
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
 
-from utils.data_loader import load_country_volatility, get_country_detail
+from utils.data_loader import load_monthly_index, get_year_range, get_country_detail
 from utils.components import make_chart_card, PLOTLY_LAYOUT, COLORS
 
 
@@ -46,6 +48,38 @@ def _iso_to_name(iso3):
         return country.name if country else iso3
     except Exception:
         return iso3
+
+
+@lru_cache(maxsize=1)
+def _monthly_with_year():
+    df = load_monthly_index().copy()
+    df["year"] = pd.to_datetime(df["year_month"]).dt.year
+    return df
+
+
+@lru_cache(maxsize=32)
+def _country_volatility_for_years(year_start, year_end):
+    df = _monthly_with_year()
+    df = df[(df["year"] >= year_start) & (df["year"] <= year_end)]
+
+    cv = df.groupby("countryiso3").agg(
+        n_months=("year_month", "nunique"),
+        mean_index=("price_index", "mean"),
+        std_index=("price_index", "std"),
+        mean_mom_change=("mom_change_pct", "mean"),
+        std_mom_change=("mom_change_pct", "std"),
+        median_usdprice=("usdprice", "median"),
+    ).reset_index()
+
+    cv["cv_index"] = cv["std_index"] / cv["mean_index"]
+    cv = cv.dropna(subset=["cv_index"]).reset_index(drop=True)
+    return cv
+
+
+def _resolve_years(year_range):
+    if year_range and len(year_range) == 2:
+        return int(year_range[0]), int(year_range[1])
+    return get_year_range()
 
 
 def _zoom_button(symbol, btn_id):
@@ -100,14 +134,29 @@ def _detail_placeholder():
     )
 
 
+def _detail_message(text):
+    return html.Div(
+        text,
+        style={
+            "display": "flex",
+            "flexDirection": "column",
+            "justifyContent": "center",
+            "height": "100%",
+            "color": "var(--text-sub)",
+            "fontSize": "13px",
+            "lineHeight": "1.5",
+        },
+    )
+
+
 def geography_layout():
     return html.Div(
         [
             dcc.Store(id="geo-zoom-dummy"),
             make_chart_card(
                 "Persebaran Geografis Volatilitas Harga",
-                "Koefisien variasi (CV) indeks harga pangan per negara — semakin merah, semakin volatil. "
-                "Seret untuk memutar globe, gunakan tombol +/- untuk memperbesar.",
+                "Koefisien variasi (CV) indeks harga pangan per negara pada rentang tahun terpilih — "
+                "semakin merah, semakin volatil. Seret untuk memutar globe, gunakan tombol +/- untuk memperbesar.",
                 html.Div(
                     [
                         dbc.Row(
@@ -226,9 +275,15 @@ def geography_layout():
     Input("year-slider", "value"),
 )
 def update_country_map(year_range):
-    cv = load_country_volatility()
-    cv = cv.copy()
+    year_start, year_end = _resolve_years(year_range)
+    cv = _country_volatility_for_years(year_start, year_end).copy()
     cv["country_name"] = [_iso_to_name(iso) for iso in cv["countryiso3"]]
+
+    if cv.empty:
+        zmin, zmax = 0.0, 1.0
+    else:
+        zmin = float(cv["cv_index"].min())
+        zmax = float(cv["cv_index"].max())
 
     fig = go.Figure(
         data=go.Choropleth(
@@ -254,8 +309,8 @@ def update_country_map(year_range):
             ),
             marker_line_width=0.4,
             marker_line_color="rgba(255, 255, 255, 0.85)",
-            zmin=float(cv["cv_index"].min()),
-            zmax=float(cv["cv_index"].max()),
+            zmin=zmin,
+            zmax=zmax,
         )
     )
 
@@ -330,8 +385,9 @@ clientside_callback(
 @callback(
     Output("country-detail-info", "children"),
     Input("country-volatility-map", "clickData"),
+    Input("year-slider", "value"),
 )
-def display_country_info(clickData):
+def display_country_info(clickData, year_range):
     if not clickData or "points" not in clickData or len(clickData["points"]) == 0:
         return _detail_placeholder()
 
@@ -340,16 +396,19 @@ def display_country_info(clickData):
     if not country_iso:
         return _detail_placeholder()
 
-    cv = load_country_volatility()
+    year_start, year_end = _resolve_years(year_range)
+    cv = _country_volatility_for_years(year_start, year_end)
     country_data = cv[cv["countryiso3"] == country_iso]
+
+    country_name = _iso_to_name(country_iso)
+
     if country_data.empty:
-        return html.Div(
-            "Data negara tidak ditemukan.",
-            style={"color": "var(--text-sub)", "fontSize": "13px"},
+        return _detail_message(
+            f"Tidak ada data untuk {country_name} ({country_iso}) "
+            f"pada rentang tahun {year_start}–{year_end}."
         )
 
     row = country_data.iloc[0]
-    country_name = _iso_to_name(country_iso)
 
     cv_min = float(cv["cv_index"].min())
     cv_max = float(cv["cv_index"].max())
@@ -364,11 +423,11 @@ def display_country_info(clickData):
             [
                 html.Div(
                     label,
-                    style={"fontSize": "12px", "color": "var(--text-sub)", "marginBottom": "6px"},
+                    style={"fontSize": "11px", "color": "var(--text-sub)", "marginBottom": "4px"},
                 ),
                 html.Div(
                     value,
-                    style={"fontSize": "20px", "fontWeight": "700", "color": "var(--text-main)"},
+                    style={"fontSize": "20px", "fontWeight": "600", "color": "var(--text-main)"},
                 ),
             ],
             style={
@@ -391,7 +450,7 @@ def display_country_info(clickData):
                         style={"fontSize": "18px", "fontWeight": "700", "color": "var(--text-main)"},
                     ),
                     html.Div(
-                        country_iso,
+                        f"{country_iso} \u00b7 {year_start}\u2013{year_end}",
                         style={"fontSize": "12px", "color": "var(--text-sub)", "marginTop": "2px"},
                     ),
                 ],
