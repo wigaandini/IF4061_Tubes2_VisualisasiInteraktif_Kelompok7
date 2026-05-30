@@ -652,9 +652,6 @@ def update_top_commodities(clickData, year_range):
             y=labels,
             orientation="h",
             marker=dict(color=colors_rev, line=dict(width=0)),
-            text=[f"{v:.2f}" for v in vals],
-            textposition="outside",
-            textfont=dict(size=10, color=COLORS["text_sub"]),
             hovertemplate="<b>%{y}</b><br>Indeks CV: %{x:.3f}<extra></extra>",
             cliponaxis=False,
         )
