@@ -145,7 +145,7 @@ def update_trend_with_zoom(year_range):
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=380,
-        xaxis=dict(title=None, showgrid=False, dtick="M12", tickformat="%Y-%m"),
+        xaxis=dict(title="Tahun", showgrid=False, dtick="M12", tickformat="%Y-%m"),
         yaxis=dict(title="Median Harga (USD)", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
         hovermode="x unified",
@@ -220,29 +220,30 @@ def update_heatmap(year_range):
             colorbar=dict(title="MoM %", titleside="right", thickness=12, len=0.9),
         )
     )
-
+    
     fig.update_layout(
         **PLOTLY_LAYOUT,
         height=420,
         uirevision=f"heatmap-{start_year}-{end_year}",
         dragmode="zoom",
         xaxis=dict(
-            title=dict(text="Tahun", standoff=14),
+            title=dict(text="Tahun", standoff=14, font=dict(size=13, color=COLORS["text_main"])),
             showgrid=False,
             tickangle=0,
             tickmode="array",
             tickvals=tickvals,
             ticktext=ticktext,
-            tickfont=dict(size=10),
+            tickfont=dict(size=12, color=COLORS["text_main"]),
             showticklabels=True,
             autorange=True,
         ),
         yaxis=dict(
-            title=dict(text="Kategori", standoff=18),
+            title=dict(text="Kategori", standoff=18, font=dict(size=13, color=COLORS["text_main"])),
             showgrid=False,
             autorange=True,
             automargin=True,
             ticklabelstandoff=10,
+            tickfont=dict(size=12, color=COLORS["text_main"]),
         ),
     )
 
