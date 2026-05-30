@@ -135,12 +135,12 @@ def layout():
                                     id="volatile-title",
                                     className="volatile-title",
                                 ),
-
                                 html.Div(
                                     "Diurutkan berdasarkan koefisien variasi (CV) dari indeks harga",
                                     className="volatile-subtitle",
                                 ),
-                            ]
+                            ],
+                            className="volatile-title-group",
                         ),
 
                         html.Div(
@@ -149,7 +149,6 @@ def layout():
                                     "Top N",
                                     className="volatile-dropdown-label",
                                 ),
-
                                 dcc.Dropdown(
                                     id="top-n-dropdown",
                                     options=[
@@ -162,8 +161,6 @@ def layout():
                                     clearable=False,
                                     searchable=False,
                                     className="volatile-dropdown",
-                                    persistence=True,
-                                    persistence_type="session",
                                 ),
                             ],
                             className="volatile-dropdown-group",
