@@ -179,7 +179,14 @@ def update_top_volatile(year_range, top_n):
         height=chart_height,
         margin=dict(l=40, r=20, t=40, b=40),
         xaxis=dict(title="Indeks CV", showgrid=True, gridcolor="rgba(0,0,0,0.05)"),
-        yaxis=dict(title=None, automargin=True),
+        yaxis=dict(
+            title="Komoditas",
+            automargin=True,
+            tickfont=dict(size=11),
+            ticks="outside",
+            ticklen=12,
+            tickcolor="rgba(0,0,0,0)",
+        ),
         showlegend=False,
     )
     fig.update_layout(**layout)
