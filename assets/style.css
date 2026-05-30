@@ -124,6 +124,10 @@ body {
     margin-bottom: 24px;
 }
 
+.chart-card .plotly {
+    margin: 0 !important;
+}
+
 .chart-card-title {
     font-size: 16px;
     font-weight: 700;
@@ -134,7 +138,7 @@ body {
 .chart-card-subtitle {
     font-size: 12px;
     color: var(--text-sub);
-    margin-bottom: 16px;
+    margin-bottom: 4px;
 }
 
 .insight-strip {
@@ -168,3 +172,73 @@ body {
 }
 
 #_pages_plugin-content { width: 100%; }
+
+/* Plotly Toolbar Styling */
+.modebar {
+    background: var(--card-bg) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 3px rgba(31,42,68,0.1) !important;
+}
+
+.modebar-btn {
+    color: var(--text-sub) !important;
+    opacity: 0.8 !important;
+    transition: all 0.2s ease !important;
+    border: none !important;
+}
+
+.modebar-btn:hover {
+    color: var(--spectrum-4) !important;
+    opacity: 1 !important;
+    background: rgba(203, 87, 63, 0.1) !important;
+}
+
+.modebar-btn.active {
+    color: var(--spectrum-4) !important;
+    opacity: 1 !important;
+    background: rgba(203, 87, 63, 0.15) !important;
+}
+
+.modebar-group {
+    margin-right: 4px !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+/* Hide plotly logo */
+.plotly-logomark {
+    opacity: 0.4 !important;
+}
+
+/* Custom Chart Control Buttons */
+.trend-control-btn {
+    background-color: var(--card-bg);
+    color: var(--text-main);
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(31,42,68,0.05);
+}
+
+.trend-control-btn:hover {
+    background-color: var(--spectrum-4);
+    color: white;
+    border-color: var(--spectrum-4);
+    box-shadow: 0 2px 6px rgba(203, 87, 63, 0.2);
+}
+
+.trend-control-btn:active {
+    background-color: #b34e38;
+    transform: scale(0.98);
+}
+
+.trend-control-btn.active {
+    background-color: var(--spectrum-4);
+    color: white;
+    border-color: var(--spectrum-4);
+}
+
