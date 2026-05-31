@@ -137,22 +137,42 @@ def _empty_fig(message, height):
     return fig
 
 
-def _zoom_button(symbol, btn_id, font_size="18px"):
+def _zoom_button(symbol, label, btn_id):
     return html.Button(
-        symbol,
+        [
+            html.Div(
+                symbol,
+                style={
+                    "fontSize": "20px",
+                    "fontWeight": "700",
+                    "lineHeight": "1",
+                },
+            ),
+            html.Div(
+                label,
+                style={
+                    "fontSize": "10px",
+                    "fontWeight": "400",
+                    "lineHeight": "1.1",
+                },
+            ),
+        ],
         id=btn_id,
         n_clicks=0,
         style={
-            "width": "34px",
-            "height": "34px",
+            "width": "72px",
+            "minWidth": "unset",
+            "padding": "6px 10px",
             "backgroundColor": "rgba(31, 42, 68, 0.88)",
             "color": "white",
             "border": "none",
             "borderRadius": "8px",
             "cursor": "pointer",
-            "fontSize": font_size,
-            "fontWeight": "bold",
-            "lineHeight": "1",
+            "display": "flex",
+            "flexDirection": "column",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "gap": "1px",
             "boxShadow": "0 2px 6px rgba(31, 42, 68, 0.25)",
         },
     )
@@ -222,9 +242,9 @@ def geography_layout():
                                     [
                                         html.Div(
                                             [
-                                                _zoom_button("+", "zoom-in-btn"),
-                                                _zoom_button("\u2212", "zoom-out-btn"),
-                                                _zoom_button("\u21BA", "geo-reset-btn", font_size="15px"),
+                                                _zoom_button("\u002B", "Zoom In", "zoom-in-btn"),
+                                                _zoom_button("\u2212", "Zoom Out", "zoom-out-btn"),
+                                                _zoom_button("\u21BA", "Reset", "geo-reset-btn"),
                                             ],
                                             style={
                                                 "position": "absolute",
