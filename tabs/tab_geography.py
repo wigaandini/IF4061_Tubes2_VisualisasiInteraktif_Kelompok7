@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import pandas as pd
 
 from utils.data_loader import load_monthly_index, get_year_range, get_country_detail
-from utils.components import make_chart_card, PLOTLY_LAYOUT, COLORS, SPECTRUM
+from utils.components import make_chart_card, make_info_note, PLOTLY_LAYOUT, COLORS, SPECTRUM
 from processing.translations import COMMODITY_ID
 
 
@@ -236,6 +236,11 @@ def geography_layout():
                 "Semakin merah, semakin volatil. Seret untuk memutar globe dan gunakan tombol +/- untuk memperbesar.",
                 html.Div(
                     [
+                        make_info_note(
+                            "CV (Coefficient of Variation) = standar deviasi / rata-rata indeks harga. "
+                            "Semakin tinggi nilainya, semakin tidak stabil harga pangan di negara tersebut. "
+                            "MoM (Month-over-Month) menunjukkan persentase perubahan harga dari bulan ke bulan berikutnya."
+                        ),
                         html.Div(
                             [
                                 html.Div(

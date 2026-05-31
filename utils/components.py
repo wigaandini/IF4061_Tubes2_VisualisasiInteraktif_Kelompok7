@@ -79,3 +79,18 @@ def make_filter_group(label, component):
         ],
         style={"marginBottom": "16px"},
     )
+
+
+def make_info_note(text):
+    return html.Div(
+        [html.Span("ℹ ", style={"fontWeight": "700"}), text],
+        style={
+            "fontSize": "12px",
+            "color": COLORS["text_sub"],
+            "backgroundColor": "rgba(79, 93, 117, 0.06)",
+            "borderRadius": "6px",
+            "padding": "8px 12px",
+            "marginBottom": "12px",
+            "lineHeight": "1.5",
+        },
+    )

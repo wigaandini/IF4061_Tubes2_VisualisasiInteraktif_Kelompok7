@@ -11,6 +11,7 @@ from utils.data_loader import (
 )
 from utils.components import (
     make_chart_card,
+    make_info_note,
     PLOTLY_LAYOUT,
     COLORS,
     SPECTRUM,
@@ -64,7 +65,13 @@ def commodity_layout():
                     className="volatile-header",
                 ),
                 None,
-                dcc.Graph(id="top-volatile-chart", config={"displayModeBar": False}),
+                html.Div([
+                    make_info_note(
+                        "CV (Coefficient of Variation) = standar deviasi / rata-rata indeks harga. "
+                        "Semakin tinggi nilainya, semakin tidak stabil (volatil) harga komoditas tersebut."
+                    ),
+                    dcc.Graph(id="top-volatile-chart", config={"displayModeBar": False}),
+                ]),
                 insight="Beras, kedelai, dan kacang polong secara bergantian mendominasi peringkat atas volatilitas "
                         "sepanjang satu dekade terkahir, tetapi ketiganya menunjukkan pola yang sama berupa peningkatan "
                         "volatilitas yang saling terhubung.",

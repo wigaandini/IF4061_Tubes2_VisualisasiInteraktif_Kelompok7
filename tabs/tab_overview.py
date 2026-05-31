@@ -13,6 +13,7 @@ from utils.data_loader import (
 from utils.components import (
     make_kpi_card,
     make_chart_card,
+    make_info_note,
     PLOTLY_LAYOUT,
     COLORS,
 )
@@ -94,6 +95,10 @@ def overview_layout():
                 "Perubahan harga month-over-month (%) per kategori. Semakin gelap warna merah, semakin tinggi kenaikan harga. Semakin pekat warna biru, semakin tajam penurunannya.",
                 html.Div(
                     [
+                        make_info_note(
+                            "MoM (Month-over-Month) adalah persentase perubahan harga dari satu bulan ke bulan berikutnya. "
+                            "Nilai positif menunjukkan kenaikan harga, nilai negatif menunjukkan penurunan."
+                        ),
                         dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
                         html.Div(id="heatmap-insight"),
                     ]
