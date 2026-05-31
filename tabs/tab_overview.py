@@ -91,7 +91,7 @@ def overview_layout():
             ),
             make_chart_card(
                 "Intensitas Gejolak per Kategori Pangan",
-                "Perubahan harga month-over-month (%) per kategori, semakin gelap, semakin bergejolak",
+                "Perubahan harga month-over-month (%) per kategori. Semakin gelap warna merah, semakin tinggi kenaikan harga. Semakin pekat warna biru, semakin tajam penurunannya.",
                 html.Div(
                     [
                         dcc.Graph(id="category-heatmap", config={"displayModeBar": False}),
