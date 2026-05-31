@@ -82,14 +82,36 @@ def make_filter_group(label, component):
 
 
 def make_info_note(text):
-    return html.Div(
-        [html.Span("ℹ ", style={"fontWeight": "700"}), text],
+    icon = html.Span(
+        "i",
         style={
+            "display": "inline-flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "width": "18px",
+            "height": "18px",
+            "borderRadius": "50%",
+            "backgroundColor": COLORS["text_sub"],
+            "color": "#FFFFFF",
+            "fontSize": "11px",
+            "fontWeight": "700",
+            "fontStyle": "italic",
+            "fontFamily": "Georgia, serif",
+            "marginRight": "8px",
+            "flexShrink": "0",
+            "lineHeight": "1",
+        },
+    )
+    return html.Div(
+        [icon, html.Span(text)],
+        style={
+            "display": "flex",
+            "alignItems": "flex-start",
             "fontSize": "12px",
             "color": COLORS["text_sub"],
             "backgroundColor": "rgba(79, 93, 117, 0.06)",
             "borderRadius": "6px",
-            "padding": "8px 12px",
+            "padding": "10px 14px",
             "marginBottom": "12px",
             "lineHeight": "1.5",
         },
