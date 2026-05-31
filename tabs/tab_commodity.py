@@ -65,16 +65,16 @@ def commodity_layout():
                     className="volatile-header",
                 ),
                 None,
-                html.Div([
-                    make_info_note(
-                        "CV (Coefficient of Variation) = standar deviasi / rata-rata indeks harga. "
-                        "Semakin tinggi nilainya, semakin tidak stabil (volatil) harga komoditas tersebut."
-                    ),
-                    dcc.Graph(id="top-volatile-chart", config={"displayModeBar": False}),
-                ]),
-                insight="Beras, kedelai, dan kacang polong secara bergantian mendominasi peringkat atas volatilitas "
-                        "sepanjang satu dekade terkahir, tetapi ketiganya menunjukkan pola yang sama berupa peningkatan "
-                        "volatilitas yang saling terhubung.",
+                html.Div(
+                    [
+                        make_info_note(
+                            "CV (Coefficient of Variation) = standar deviasi / rata-rata indeks harga. "
+                            "Semakin tinggi nilainya, semakin tidak stabil (volatil) harga komoditas tersebut."
+                        ),
+                        dcc.Graph(id="top-volatile-chart", config={"displayModeBar": False}),
+                        html.Div(id="volatile-insight"),
+                    ]
+                ),
             ),
             make_chart_card(
                 "Perbandingan Tren Komoditas",
@@ -134,6 +134,7 @@ def update_volatile_title(top_n):
 
 @callback(
     Output("top-volatile-chart", "figure"),
+    Output("volatile-insight", "children"),
     Input("year-slider", "value"),
     Input("top-n-dropdown", "value"),
 )
@@ -200,7 +201,83 @@ def update_top_volatile(year_range, top_n):
     fig.update_yaxes(tickfont=dict(color=COLORS["text_main"], family="DM Sans, sans-serif", size=12), ticklabelstandoff=10)
     fig.update_xaxes(tickfont=dict(color=COLORS["text_main"], family="DM Sans, sans-serif", size=11))
 
-    return fig
+    if len(top) == 0:
+        insight = html.P(
+            "Tidak ada data komoditas pada rentang tahun yang dipilih.",
+            style={
+                "margin": "0",
+                "fontSize": "13px",
+                "color": "var(--text-sub)",
+            },
+        )
+    else:
+        top3 = top.head(3)
+
+        items = [
+            html.Li(
+                [
+                    html.Span(
+                        row["commodity"],
+                        style={"fontWeight": "600"},
+                    ),
+                    html.Span(
+                        f" ({row['cv_index']:.3f})",
+                        style={
+                            "color": "var(--highlight)",
+                            "fontWeight": "600",
+                        },
+                    ),
+                ],
+                style={
+                    "marginBottom": "4px",
+                    "fontSize": "13px",
+                    "color": "var(--text-main)",
+                },
+            )
+            for _, row in top3.iterrows()
+        ]
+
+        top_name = top3.iloc[0]["commodity"]
+
+        insight = html.Div(
+            [
+                html.P(
+                    [
+                        "Pada rentang periode yang dipilih, ",
+                        html.Span(
+                            top_name,
+                            style={
+                                "color": "var(--highlight)",
+                                "fontWeight": "600",
+                            },
+                        ),
+                        " menjadi komoditas dengan tingkat volatilitas tertinggi berdasarkan koefisien variasi (CV). "
+                        "Tiga komoditas paling volatil adalah:",
+                    ],
+                    style={
+                        "margin": "0 0 8px 0",
+                        "fontSize": "13px",
+                        "color": "var(--text-main)",
+                    },
+                ),
+                html.Ul(
+                    items,
+                    style={
+                        "margin": "0",
+                        "paddingLeft": "20px",
+                    },
+                ),
+            ],
+            style={
+                "margin": "4px 0 0 0",
+                "padding": "12px 16px",
+                "borderLeft": "4px solid var(--highlight)",
+                "backgroundColor": "rgba(217, 58, 47, 0.05)",
+                "borderRadius": "4px",
+            },
+        )
+
+    return fig, insight
 
 
 @callback(
